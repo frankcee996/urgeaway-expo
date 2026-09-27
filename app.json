@@ -11,7 +11,9 @@
       "image": "./assets/splash.png",
       "backgroundColor": "#0c1626"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.ceeenterprise.UrgeAway"
@@ -34,6 +36,12 @@
         }
       ],
       "./plugins/withWebAssets.js"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2797fc46-c742-4e2e-b24d-14f5deeb707c"
+      }
+    },
+    "owner": "ceeabells-team"
   }
 }
