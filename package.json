@@ -1,0 +1,29 @@
+{
+  "name": "urgeaway-expo",
+  "version": "0.1.0",
+  "main": "node_modules/expo/AppEntry.js",
+  "private": true,
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "prebuild": "expo prebuild"
+  },
+  "dependencies": {
+    "expo": "^57.0.0",
+    "expo-status-bar": "*",
+    "expo-dev-client": "*",
+    "expo-build-properties": "*",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-webview": "*",
+    "screen-pinning": "file:./modules/screen-pinning",
+    "app-lock": "file:./modules/app-lock"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@expo/config-plugins": "*",
+    "@types/react": "~19.2.0",
+    "typescript": "~5.6.0"
+  }
+}

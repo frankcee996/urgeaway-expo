@@ -1,0 +1,7 @@
+{
+  "name": "app-lock",
+  "version": "1.0.0",
+  "description": "Android Lock In Mode (AccessibilityService-based app blocking) for UrgeAway",
+  "main": "index.ts",
+  "license": "UNLICENSED"
+}

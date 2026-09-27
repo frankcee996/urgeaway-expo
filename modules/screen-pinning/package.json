@@ -1,0 +1,7 @@
+{
+  "name": "screen-pinning",
+  "version": "1.0.0",
+  "description": "Android Screen Pinning bridge for UrgeAway's Urge Lock",
+  "main": "index.ts",
+  "license": "UNLICENSED"
+}
