@@ -25,7 +25,6 @@ import { INJECTED_BRIDGE } from './bridge/injectedBridge';
      have, not something this WebView step adds.
    ========================================================================== */
 const DEV_SERVER_URL: string | null = null; // e.g. 'http://127.0.0.1:8080'
-
 const PROD_SOURCE =
   Platform.OS === 'android'
     ? { uri: 'file:///android_asset/web/index.html' }
