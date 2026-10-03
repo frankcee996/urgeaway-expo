@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="applock_accessibility_description">Lets UrgeAway send you back to Home when you open an app you\'ve locked in Lock In Mode. Reads only which app is in the foreground — never any on-screen content.</string>
+</resources>
