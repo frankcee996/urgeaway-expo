@@ -253,7 +253,7 @@ const Notifications = (() => {
   }
 
   // Records what actually reached the device into the local notification
-  // history shown on the Dashboard/bell (capped at 10 there). Both
+  // history shown on the Dashboard/bell (capped at 5 there). Both
   // "received" (foreground) and "tapped" (background/killed) cases feed
   // the same log, using a deterministic id so re-firing the same
   // notification never duplicates an entry.

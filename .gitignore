@@ -3,3 +3,5 @@ node_modules/
 /android/
 /ios/
 *.log
+serviceAccountKey.json
+serviceAccountKey.json

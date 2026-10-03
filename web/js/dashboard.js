@@ -95,7 +95,7 @@ function renderDashboardBody(body) {
           <div class="line1" style="font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(name || 'Add your name')}</div>
         </div>
         <div style="color:var(--text-2);font-size:11.5px;margin-top:2px;">
-          ${user ? escapeHtml(user.email || 'Signed in') : `Guest \u00b7 <button id="dash-signin-link" style="background:none;border:none;padding:0;color:var(--cyan);font-size:11.5px;font-weight:600;">Sign in</button>`}
+          ${user ? escapeHtml((user.email || 'Signed in').split('@')[0]) : `Guest \u00b7 <button id="dash-signin-link" style="background:none;border:none;padding:0;color:var(--cyan);font-size:11.5px;font-weight:600;">Sign in</button>`}
         </div>
       </div>
       <button class="btn btn-secondary" id="dash-edit-profile" style="position:relative;z-index:1;padding:8px 14px;font-size:12px;flex-shrink:0;">Edit Profile</button>

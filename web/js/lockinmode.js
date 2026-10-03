@@ -364,7 +364,7 @@ function renderLockInMode() {
           <div class="desc">${new Date(pending.unlockAt).toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' })}</div>
         </div>
         <div class="card" style="color:var(--text-2);font-size:12.5px;line-height:1.6;margin-bottom:var(--space-3);">
-          Once this starts, UrgeAway won\u2019t offer a way to end it early \u2014 that\u2019s the point of a commitment device. The one real way out before the timer ends is turning off UrgeAway\u2019s Accessibility permission yourself, in your phone\u2019s own Settings. Nothing here hides that option from you; it just isn\u2019t a button in this app.
+          Once this starts, UrgeAway won\u2019t offer a way to end it early \u2014 that\u2019s the point of a commitment device. Set the duration knowing you won\u2019t be able to shorten it from inside the app.
         </div>
         <label style="display:flex;align-items:flex-start;gap:10px;font-size:12.5px;color:var(--text-2);margin-bottom:var(--space-3);cursor:pointer;">
           <input type="checkbox" id="lim-ack" style="margin-top:2px;" />
