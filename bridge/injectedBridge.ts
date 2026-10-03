@@ -43,6 +43,29 @@ export const INJECTED_BRIDGE = `
     }
   };
 
+  // Notifications.listen()'s addListener is an event subscription, not a
+  // request/response call — events arrive pushed from native (App.tsx
+  // calls injectJavaScript to invoke __notifDispatch) rather than through
+  // __bridgeCall's promise-per-request pattern used everywhere else.
+  window.__notifListeners = { localNotificationReceived: [], localNotificationActionPerformed: [] };
+  window.__notifDispatch = function (event, payload) {
+    (window.__notifListeners[event] || []).forEach(function (cb) { cb(payload); });
+  };
+
+  window.CapNotifications = {
+    LocalNotifications: {
+      requestPermissions: function () { return window.__bridgeCall('notifications', 'requestPermissions'); },
+      createChannel: function (opts) { return window.__bridgeCall('notifications', 'createChannel', opts); },
+      schedule: function (opts) { return window.__bridgeCall('notifications', 'schedule', opts); },
+      cancel: function (opts) { return window.__bridgeCall('notifications', 'cancel', opts); },
+      getDeliveredNotifications: function () { return window.__bridgeCall('notifications', 'getDeliveredNotifications'); },
+      addListener: function (event, cb) {
+        window.__notifListeners[event] = window.__notifListeners[event] || [];
+        window.__notifListeners[event].push(cb);
+      }
+    }
+  };
+
   window.CapAppLock = {
     AppLock: {
       getInstalledApps: function () { return window.__bridgeCall('applock', 'getInstalledApps'); },

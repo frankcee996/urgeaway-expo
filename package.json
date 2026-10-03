@@ -10,21 +10,21 @@
     "prebuild": "expo prebuild"
   },
   "dependencies": {
-    "app-lock": "file:./modules/app-lock",
     "expo": "^57.0.0",
-    "expo-build-properties": "*",
-    "expo-dev-client": "*",
     "expo-status-bar": "*",
+    "expo-dev-client": "*",
+    "expo-build-properties": "*",
+    "expo-notifications": "*",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-webview": "*",
-    "screen-pinning": "file:./modules/screen-pinning"
+    "screen-pinning": "file:./modules/screen-pinning",
+    "app-lock": "file:./modules/app-lock"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
     "@expo/config-plugins": "*",
     "@types/react": "~19.2.0",
-    "babel-preset-expo": "^57.0.13",
     "typescript": "~5.6.0"
   }
 }

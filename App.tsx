@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import ScreenPinning from './modules/screen-pinning';
 import AppLock from './modules/app-lock';
 import { INJECTED_BRIDGE } from './bridge/injectedBridge';
+import * as NotificationsBridge from './bridge/notifications';
 
 /* ==========================================================================
    This is the entire app. It loads your original www/ (copied verbatim to
@@ -25,6 +26,7 @@ import { INJECTED_BRIDGE } from './bridge/injectedBridge';
      have, not something this WebView step adds.
    ========================================================================== */
 const DEV_SERVER_URL: string | null = null; // e.g. 'http://127.0.0.1:8080'
+
 const PROD_SOURCE =
   Platform.OS === 'android'
     ? { uri: 'file:///android_asset/web/index.html' }
@@ -46,6 +48,10 @@ export default function App() {
     return () => sub.remove();
   }, [canGoBack]);
 
+  React.useEffect(() => {
+    NotificationsBridge.listen((script) => webviewRef.current?.injectJavaScript(script));
+  }, []);
+
   // Dispatches a bridged call (from window.CapScreenPinning / window.CapAppLock
   // inside the WebView, see bridge/injectedBridge.ts) to the real native
   // module, then injects the result back so the WebView's pending Promise
@@ -62,14 +68,17 @@ export default function App() {
       let result: unknown = null;
       let error: string | null = null;
       try {
-        if (Platform.OS !== 'android') {
-          throw new Error('unsupported on this platform');
-        }
-        if (msg.kind === 'screenpinning') {
-          const fn = (ScreenPinning as any)[msg.method];
-          result = await fn();
-        } else if (msg.kind === 'applock') {
-          const fn = (AppLock as any)[msg.method];
+        if (msg.kind === 'screenpinning' || msg.kind === 'applock') {
+          if (Platform.OS !== 'android') throw new Error('unsupported on this platform');
+          if (msg.kind === 'screenpinning') {
+            const fn = (ScreenPinning as any)[msg.method];
+            result = await fn();
+          } else {
+            const fn = (AppLock as any)[msg.method];
+            result = msg.args && Object.keys(msg.args).length ? await fn(msg.args) : await fn();
+          }
+        } else if (msg.kind === 'notifications') {
+          const fn = (NotificationsBridge as any)[msg.method];
           result = msg.args && Object.keys(msg.args).length ? await fn(msg.args) : await fn();
         } else {
           throw new Error('unknown bridge kind: ' + msg.kind);
