@@ -10,17 +10,19 @@
     "prebuild": "expo prebuild"
   },
   "dependencies": {
+    "app-lock": "file:./modules/app-lock",
     "expo": "^57.0.0",
-    "expo-status-bar": "*",
-    "expo-dev-client": "*",
     "expo-build-properties": "*",
-    "expo-notifications": "*",
     "expo-constants": "*",
+    "expo-dev-client": "*",
+    "expo-notifications": "*",
+    "expo-server-sdk": "^7.2.0",
+    "expo-status-bar": "*",
+    "firebase-admin": "^14.5.0",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-webview": "*",
-    "screen-pinning": "file:./modules/screen-pinning",
-    "app-lock": "file:./modules/app-lock"
+    "screen-pinning": "file:./modules/screen-pinning"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",

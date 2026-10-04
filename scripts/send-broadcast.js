@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
-const { Expo } = require('expo-server-sdk');
+const { getMessaging } = require('firebase-admin/messaging');
 const path = require('path');
 
 const serviceAccountPath = path.join(__dirname, '..', 'serviceAccountKey.json');
@@ -27,7 +27,7 @@ if (!title || !body) {
 
 const app = initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore(app);
-const expo = new Expo();
+const messaging = getMessaging(app);
 
 async function main() {
   const snapshot = await db.collection('pushTokens').get();
@@ -36,42 +36,31 @@ async function main() {
     return;
   }
 
-  const tokenDocs = snapshot.docs.map((doc) => doc.id);
-  const validTokens = tokenDocs.filter((t) => Expo.isExpoPushToken(t));
-  const invalidTokens = tokenDocs.filter((t) => !Expo.isExpoPushToken(t));
+  const tokens = snapshot.docs.map((doc) => doc.id);
+  console.log(`Sending to ${tokens.length} device(s)...`);
 
-  if (invalidTokens.length) {
-    console.log(`Skipping ${invalidTokens.length} token(s) that aren't valid Expo push tokens (stale format?).`);
-  }
-  if (!validTokens.length) {
-    console.log('No valid Expo push tokens to send to.');
-    return;
-  }
+  const chunks = [];
+  for (let i = 0; i < tokens.length; i += 500) chunks.push(tokens.slice(i, i + 500));
 
-  console.log(`Sending to ${validTokens.length} device(s)...`);
-
-  const messages = validTokens.map((token) => ({ to: token, sound: 'default', title, body }));
-  const chunks = expo.chunkPushNotifications(messages);
-  const tickets = [];
+  let successCount = 0;
+  let failureCount = 0;
+  const staleTokens = [];
 
   for (const chunk of chunks) {
-    try {
-      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-      tickets.push(...ticketChunk);
-    } catch (e) {
-      console.error('Error sending a chunk:', e);
-    }
+    const res = await messaging.sendEachForMulticast({
+      tokens: chunk,
+      notification: { title, body },
+    });
+    successCount += res.successCount;
+    failureCount += res.failureCount;
+    res.responses.forEach((r, i) => {
+      if (!r.success && (r.error?.code === 'messaging/invalid-registration-token' || r.error?.code === 'messaging/registration-token-not-registered')) {
+        staleTokens.push(chunk[i]);
+      }
+    });
   }
 
-  const staleTokens = [];
-  tickets.forEach((ticket, i) => {
-    if (ticket.status === 'error' && ticket.details?.error === 'DeviceNotRegistered') {
-      staleTokens.push(validTokens[i]);
-    }
-  });
-
-  const successCount = tickets.filter((t) => t.status === 'ok').length;
-  console.log(`Done. Accepted: ${successCount}/${tickets.length}.`);
+  console.log(`Done. Sent: ${successCount}, failed: ${failureCount}.`);
 
   if (staleTokens.length) {
     console.log(`Removing ${staleTokens.length} stale token(s) from Firestore...`);

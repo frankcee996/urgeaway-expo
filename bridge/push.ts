@@ -1,20 +1,17 @@
 import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 /* ==========================================================================
    Implements window.CapPush.PushNotifications (push.js already expects
    this exact shape — previously Capacitor's CI-built push-bundle.js).
 
-   Device side only: gets an Expo push token (not a raw FCM token) and
-   stores it in Firestore so it can be broadcast to later. Using Expo's own
-   push service means sending (scripts/send-broadcast.js) is a plain HTTP
-   call to Expo's API — no Firebase Cloud Messaging credentials to manage
-   yourself; EAS handles that relay. Firestore is still needed to track
-   *which* tokens exist — Expo's push service doesn't keep a device list
-   for you. See PUSH_SETUP.md for the one-time setup only you can do
-   (Firestore rules, a service account key — used only to read the token
-   list server-side, not to send).
+   Device side only: gets a real FCM token and stores it in Firestore so
+   it can be broadcast to later via Firebase Cloud Messaging directly
+   (not through Expo's push relay). scripts/send-broadcast.js (project
+   root) reads the `pushTokens` collection and sends to every token via
+   the Firebase Admin SDK's messaging() API — see that file and
+   PUSH_SETUP.md for the one-time setup only you can do (Firestore rules,
+   service account key).
    ========================================================================== */
 
 const FIRESTORE_PROJECT_ID = 'scholarix-d9c7c';
@@ -50,11 +47,7 @@ export async function requestPermissions(): Promise<{ receive: 'granted' | 'deni
 }
 
 export async function register(): Promise<void> {
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-  if (!projectId) {
-    throw new Error('No EAS projectId found in app config — run `eas init` first.');
-  }
-  const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
+  const { data: token } = await Notifications.getDevicePushTokenAsync();
   await saveToken(token);
 }
 
