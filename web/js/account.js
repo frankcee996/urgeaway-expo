@@ -66,15 +66,6 @@ function renderAccountBody(wrap, onAuthed) {
   const body = wrap.querySelector('#account-body') || wrap;
   body.innerHTML = '';
 
-  if (!Auth.available()) {
-    body.appendChild(fmt(`
-      <div class="notice-box">
-        Sign-in needs the installed Android app — it's not available in this browser preview.
-      </div>
-    `));
-    return;
-  }
-
   const user = Auth.getCurrentUser();
 
   if (user) {
