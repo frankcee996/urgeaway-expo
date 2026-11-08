@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The 50 messages shown on the home-screen widget. Edit freely: keep one
+     <item> per message, short (about 60 characters), no straight quotes or
+     apostrophes (use ’ and “ ”). Any count works; they are shuffled so each
+     shows once before any repeat. Rebuild the app after changing them. -->
+<resources>
+    <string-array name="quick_widget_messages">
+        <item>Don’t give in. You’re stronger than this urge.</item>
+        <item>This will pass. Breathe.</item>
+        <item>Ten minutes. Outlast it.</item>
+        <item>Not today, urge.</item>
+        <item>You’ve beaten this before.</item>
+        <item>Pause. Breathe. Choose.</item>
+        <item>The urge lies. It always fades.</item>
+        <item>One moment at a time.</item>
+        <item>Future you is watching. Make them proud.</item>
+        <item>Drink some water. Wait it out.</item>
+        <item>Urges are waves. Ride it.</item>
+        <item>You’re in charge, not the craving.</item>
+        <item>Change the scene. Take a short walk.</item>
+        <item>Every “no” makes you stronger.</item>
+        <item>Look how far you’ve come.</item>
+        <item>Stay with it. It’s almost over.</item>
+        <item>Your reasons still matter.</item>
+        <item>Breathe in for four, out for six.</item>
+        <item>Small step. Right now. Anything else.</item>
+        <item>Cravings are loud, not true.</item>
+        <item>You’ve got this. Really.</item>
+        <item>Skip the urge. Keep the streak.</item>
+        <item>Be bored for ten minutes. You’ll live.</item>
+        <item>It’s just a feeling. Feelings pass.</item>
+        <item>Tap the logo, open UrgeAway, and reset.</item>
+        <item>Proud of you for even looking at this.</item>
+        <item>Strong people pause first.</item>
+        <item>Don’t negotiate. Redirect.</item>
+        <item>A tough moment isn’t a tough life.</item>
+        <item>Talk to someone you trust.</item>
+        <item>You are more than this urge.</item>
+        <item>Today counts. Keep it.</item>
+        <item>Say it: “This will pass.”</item>
+        <item>Water, deep breath, next move.</item>
+        <item>The urge is temporary. Your progress isn’t.</item>
+        <item>Hands busy, mind calm. Try a mind game.</item>
+        <item>Not giving in is a win. Take it.</item>
+        <item>Slow down. Nothing here is urgent.</item>
+        <item>You’re building a stronger you.</item>
+        <item>Reset. Refocus. Repeat.</item>
+        <item>This moment isn’t your whole story.</item>
+        <item>Take a lap around the block. Urge gone?</item>
+        <item>Be gentle with yourself. Keep going.</item>
+        <item>Willpower is a muscle. Flex it.</item>
+        <item>Choose the you you’ll be proud of tonight.</item>
+        <item>Hard now, easier later.</item>
+        <item>You’ve survived every urge so far.</item>
+        <item>Plot twist: you don’t have to give in.</item>
+        <item>Even a slow day forward is forward.</item>
+        <item>Yes, you can wait it out.</item>
+    </string-array>
+</resources>

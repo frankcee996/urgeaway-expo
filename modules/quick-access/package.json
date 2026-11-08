@@ -1,0 +1,7 @@
+{
+  "name": "quick-access",
+  "version": "1.0.0",
+  "description": "Quick Settings tile (I have an urge) and home-screen encouragement widget for UrgeAway",
+  "main": "index.ts",
+  "license": "UNLICENSED"
+}

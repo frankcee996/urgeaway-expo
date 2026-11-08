@@ -9,13 +9,15 @@ const Notifications = (() => {
   const REMINDER_ID = 8801;
   const CHANNEL_ID = 'urgeaway_reminders';
 
-  // Matches the brief's own example copy — supportive, non-specific,
-  // safe to show on a lock screen.
-  const MESSAGES = [
-    'A small reset can change the next few minutes.',
-    'You can always take the next few minutes one step at a time.',
-    'Take a moment for yourself today.',
-  ];
+  // The 10 a.m. daily nudge: 50 different messages (see nudges.js), one per
+  // day, no repeats until the pool is used up. Instead of one repeating
+  // notification (which would show the same words forever), the next 50
+  // days are scheduled individually, each with its own message, and the
+  // window is topped up whenever the app opens (see refreshNudges).
+  const NUDGE_COUNT = 50;
+  const NUDGE_ID_BASE = 880100; // ids 880100..880149, clear of REMINDER_ID and hashId()
+  const NUDGE_TOPUP_KEY = 'nudges_topup_day';
+  const NUDGE_ANCHOR_KEY = 'nudge_anchor_day'; // day number the nudges first started on
 
   // Shown when an Urge Lock session or a Lock In Mode lock finishes —
   // drawn from Data.nextShuffledIndex so all 20 cycle through once each
@@ -82,20 +84,7 @@ const Notifications = (() => {
         return { ok: false, reason: 'denied' };
       }
       await ensureChannel();
-      const message = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
-      await LocalNotifications.schedule({
-        notifications: [
-          {
-            id: REMINDER_ID,
-            title: 'UrgeAway',
-            body: message,
-            channelId: CHANNEL_ID,
-            // repeats daily at 10:00 — no minute-level tracking of the
-            // person's actual state, nothing sensitive on the lock screen
-            schedule: { on: { hour: 10, minute: 0 }, allowWhileIdle: true },
-          },
-        ],
-      });
+      await scheduleNudges();
       return { ok: true };
     } catch (e) {
       console.error('Notifications.enable failed', e);
@@ -107,11 +96,79 @@ const Notifications = (() => {
     if (!available()) return { ok: true };
     try {
       const { LocalNotifications } = window.CapNotifications;
-      await LocalNotifications.cancel({ notifications: [{ id: REMINDER_ID }] });
+      await LocalNotifications.cancel({ notifications: allNudgeIds().map((id) => ({ id })) });
+      try { Storage.remove(NUDGE_TOPUP_KEY); } catch (e) { /* non-fatal */ }
       return { ok: true };
     } catch (e) {
       console.error('Notifications.disable failed', e);
       return { ok: false };
+    }
+  }
+
+  function allNudgeIds() {
+    const ids = [REMINDER_ID]; // REMINDER_ID = the old single repeating daily notification
+    for (let i = 0; i < NUDGE_COUNT; i++) ids.push(NUDGE_ID_BASE + i);
+    return ids;
+  }
+
+  // The first time nudges are scheduled, remember that day: the 50-message
+  // rounds are counted from it, so the first 50 days never repeat a message.
+  function nudgeAnchor() {
+    let anchor = Storage.get(NUDGE_ANCHOR_KEY, null);
+    if (anchor === null) {
+      anchor = nudgeDayNumber(new Date());
+      Storage.set(NUDGE_ANCHOR_KEY, anchor);
+    }
+    return anchor;
+  }
+
+  function todayKey() {
+    return new Date().toDateString();
+  }
+
+  // Schedules the next 50 mornings at 10:00, each with its own message.
+  // Re-running is safe: the ids are fixed, so this replaces whatever was
+  // scheduled before (including the old single repeating daily reminder,
+  // which is cancelled here so nobody ends up with two at 10 a.m.).
+  async function scheduleNudges() {
+    if (!available()) return { ok: false, reason: 'unsupported' };
+    const { LocalNotifications } = window.CapNotifications;
+    await ensureChannel();
+    await LocalNotifications.cancel({ notifications: [{ id: REMINDER_ID }] });
+
+    const anchor = nudgeAnchor();
+    const now = Date.now();
+    const entries = [];
+    const day = new Date();
+    day.setHours(10, 0, 0, 0);
+    // If today's 10:00 has already passed, start from tomorrow.
+    while (entries.length < NUDGE_COUNT) {
+      if (day.getTime() > now + 30000) {
+        entries.push({
+          id: NUDGE_ID_BASE + entries.length,
+          title: 'UrgeAway',
+          body: nudgeForDate(day, anchor),
+          channelId: CHANNEL_ID,
+          schedule: { at: new Date(day.getTime()), allowWhileIdle: true },
+        });
+      }
+      day.setDate(day.getDate() + 1);
+    }
+    await LocalNotifications.schedule({ notifications: entries });
+    try { Storage.set(NUDGE_TOPUP_KEY, todayKey()); } catch (e) { /* non-fatal */ }
+    return { ok: true, count: entries.length };
+  }
+
+  // Called on every app launch: keeps the rolling 50-day window full, at
+  // most once per calendar day. Does nothing unless Reminders are on.
+  async function refreshNudges() {
+    try {
+      if (!available() || typeof Data === 'undefined') return;
+      if (!Data.getSettings().notificationsEnabled) return;
+      if (Storage.get(NUDGE_TOPUP_KEY, null) === todayKey()) return;
+      await scheduleNudges();
+    } catch (e) {
+      console.error('Notifications.refreshNudges failed', e);
     }
   }
 
@@ -310,10 +367,9 @@ const Notifications = (() => {
     const settings = Data.getSettings();
     if (settings.notificationsEnabled) {
       occurrencesBetween(10, 0, lastSync, now).forEach((ts) => {
-        // Can't recover which random message the OS actually displayed,
-        // so pick deterministically per day — still one of the same
-        // supportive lines, just not guaranteed the exact one shown.
-        const message = MESSAGES[Math.floor(ts / 86400000) % MESSAGES.length];
+        // The message for a day is a pure function of the date (nudges.js),
+        // so this matches what was actually scheduled for that morning.
+        const message = nudgeForDate(new Date(ts), Storage.get(NUDGE_ANCHOR_KEY, 0));
         Data.addNotifToHistory({ id: 'local_' + REMINDER_ID + '_' + new Date(ts).toDateString(), title: 'UrgeAway', body: message, ts });
       });
     }
@@ -350,5 +406,5 @@ const Notifications = (() => {
     }
   }
 
-  return { available, enable, disable, scheduleReminder, cancelReminder, requestPermission, scheduleCelebration, cancelCelebration, listen, syncDelivered };
+  return { available, enable, disable, refreshNudges, scheduleReminder, cancelReminder, requestPermission, scheduleCelebration, cancelCelebration, listen, syncDelivered };
 })();

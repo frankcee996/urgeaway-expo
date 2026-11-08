@@ -11,6 +11,7 @@ const App = (() => {
   let authInitPromise = null;
   let initSettled = false;
   let pendingNotificationOpen = false;
+  let pendingUrgeShortcut = false;
   let dashboardRefresh = null;
 
   const shellEl = document.getElementById('app-shell');
@@ -28,6 +29,8 @@ const App = (() => {
     // attached, the more reliably that buffered event gets caught.
     if (window.Push) Push.listen();
     if (window.Notifications) Notifications.listen();
+    // Keep the rolling 50-day window of 10 a.m. nudges full (no-op unless Reminders are on).
+    if (typeof Notifications !== 'undefined' && Notifications.refreshNudges) Notifications.refreshNudges();
     // Kick off Auth's own init (fetches any already-signed-in user, attaches
     // the auth-state listener) in parallel with the splash animation below,
     // so by the time we decide whether to show the Login Gate we know if
@@ -78,6 +81,8 @@ const App = (() => {
         // instead of being silently overwritten by Home/onboarding.
         initSettled = true;
         if (pendingNotificationOpen) { pendingNotificationOpen = false; openNotifications(); }
+        // Opened from the Quick Settings "I have an urge" tile (cold start).
+        if (pendingUrgeShortcut) { pendingUrgeShortcut = false; if (Data.isOnboarded()) openUrgeMode(); }
       });
     }));
   }
@@ -103,6 +108,15 @@ const App = (() => {
   function handleNotificationTapped() {
     if (initSettled) openNotifications();
     else pendingNotificationOpen = true;
+  }
+
+  // Called when the Quick Settings tile (urgeaway://urge) opens the app.
+  // Same pattern as handleNotificationTapped: if the launch flow hasn't
+  // finished yet, remember it and honor it once it has; otherwise start
+  // Urge Mode straight away. Skipped before onboarding is complete.
+  function handleUrgeShortcut() {
+    if (initSettled) { if (Data.isOnboarded()) openUrgeMode(); }
+    else pendingUrgeShortcut = true;
   }
 
   // Shown once, before onboarding, unless the person already signed in or
@@ -359,6 +373,7 @@ const App = (() => {
     openQuickCheckIn,
     openNotifications,
     handleNotificationTapped,
+    handleUrgeShortcut,
     syncNotificationHistory,
     triggerReachOut,
     applyTheme,
