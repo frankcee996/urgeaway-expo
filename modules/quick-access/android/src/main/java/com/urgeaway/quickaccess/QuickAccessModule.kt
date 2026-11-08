@@ -15,9 +15,12 @@ class QuickAccessModule : Module() {
     }
 
     AsyncFunction("refreshWidget") {
-      val context = appContext.reactContext ?: return@AsyncFunction
-      ScreenEvents.ensureRegistered(context)
-      UrgeAwayWidgetProvider.updateAll(context, advance = false)
+      val context = appContext.reactContext
+      if (context != null) {
+        ScreenEvents.ensureRegistered(context)
+        UrgeAwayWidgetProvider.updateAll(context, advance = false)
+      }
+      null
     }
   }
 }
