@@ -1,9 +1,10 @@
 import React from 'react';
-import { StyleSheet, Platform, BackHandler, View } from 'react-native';
+import { StyleSheet, Platform, BackHandler, View, Linking } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { StatusBar } from 'expo-status-bar';
 import ScreenPinning from './modules/screen-pinning';
 import AppLock from './modules/app-lock';
+import QuickAccess from './modules/quick-access';
 import { INJECTED_BRIDGE } from './bridge/injectedBridge';
 import * as NotificationsBridge from './bridge/notifications';
 
@@ -50,6 +51,35 @@ export default function App() {
 
   React.useEffect(() => {
     NotificationsBridge.listen((script) => webviewRef.current?.injectJavaScript(script));
+  }, []);
+
+  // Quick Settings tile ("I have an urge") opens the app via urgeaway://urge.
+  // Warm start: the link arrives as an event and goes straight into the
+  // WebView. Cold start: the WebView hasn't loaded yet, so remember it and
+  // deliver it from onLoadEnd below. (Top-level `const App` in the web code
+  // isn't a window property, hence the typeof check rather than window.App.)
+  const urgePending = React.useRef(false);
+  const deliverUrgeShortcut = React.useCallback(() => {
+    webviewRef.current?.injectJavaScript(
+      "if (typeof App !== 'undefined' && App.handleUrgeShortcut) { App.handleUrgeShortcut(); } true;"
+    );
+  }, []);
+
+  React.useEffect(() => {
+    const isUrgeLink = (url?: string | null) => !!url && url.startsWith('urgeaway://urge');
+    Linking.getInitialURL().then((url) => {
+      if (isUrgeLink(url)) urgePending.current = true;
+    });
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      if (isUrgeLink(url)) deliverUrgeShortcut();
+    });
+    return () => sub.remove();
+  }, [deliverUrgeShortcut]);
+
+  // Makes sure the home-screen widget has a message and its screen-off
+  // shuffle receiver is registered (Android only; no-op elsewhere).
+  React.useEffect(() => {
+    if (Platform.OS === 'android') QuickAccess.refreshWidget().catch(() => {});
   }, []);
 
   // Dispatches a bridged call (from window.CapScreenPinning / window.CapAppLock
@@ -112,6 +142,12 @@ export default function App() {
         // across app launches the same way it did under Capacitor —
         // no extra storage bridging needed for your existing storage.js.
         onNavigationStateChange={(nav) => setCanGoBack(nav.canGoBack)}
+        onLoadEnd={() => {
+          if (urgePending.current) {
+            urgePending.current = false;
+            deliverUrgeShortcut();
+          }
+        }}
       />
     </View>
   );
