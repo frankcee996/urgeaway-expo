@@ -49,9 +49,19 @@ export default function App() {
     return () => sub.remove();
   }, [canGoBack]);
 
-  React.useEffect(() => {
-    NotificationsBridge.listen((script) => webviewRef.current?.injectJavaScript(script));
+  // Notification events can fire before the WebView has finished loading
+  // (e.g. the tap that cold-started the app) — hold them until it has,
+  // then flush, so none are lost.
+  const webReady = React.useRef(false);
+  const pendingScripts = React.useRef<string[]>([]);
+  const sendToWeb = React.useCallback((script: string) => {
+    if (webReady.current) webviewRef.current?.injectJavaScript(script);
+    else pendingScripts.current.push(script);
   }, []);
+
+  React.useEffect(() => {
+    NotificationsBridge.listen(sendToWeb);
+  }, [sendToWeb]);
 
   // Quick Settings tile ("I have an urge") opens the app via urgeaway://urge.
   // Warm start: the link arrives as an event and goes straight into the
@@ -143,6 +153,10 @@ export default function App() {
         // no extra storage bridging needed for your existing storage.js.
         onNavigationStateChange={(nav) => setCanGoBack(nav.canGoBack)}
         onLoadEnd={() => {
+          webReady.current = true;
+          const queued = pendingScripts.current;
+          pendingScripts.current = [];
+          queued.forEach((script) => webviewRef.current?.injectJavaScript(script));
           if (urgePending.current) {
             urgePending.current = false;
             deliverUrgeShortcut();

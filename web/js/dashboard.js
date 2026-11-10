@@ -330,7 +330,7 @@ function renderNotifHistorySection(body, opts) {
   } else {
     history.forEach((n, idx) => {
       const row = fmt(`
-        <div class="list-row"${idx < history.length - 1 ? ' style="border-bottom:1px solid var(--line);"' : ''}>
+        <div class="list-row" style="cursor:pointer;${idx < history.length - 1 ? 'border-bottom:1px solid var(--line);' : ''}">
           <div style="min-width:0;">
             <div class="label" style="font-size:13.5px;">${escapeHtml(n.title)}</div>
             ${n.body ? `<div class="desc" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(n.body)}</div>` : ''}
@@ -338,6 +338,7 @@ function renderNotifHistorySection(body, opts) {
           <div style="color:var(--text-3);font-size:10.5px;flex-shrink:0;white-space:nowrap;margin-left:10px;">${timeAgo(n.ts)}</div>
         </div>
       `);
+      row.addEventListener('click', () => { if (window.App && App.openNotificationDetail) App.openNotificationDetail(n); });
       notifCard.appendChild(row);
     });
   }
@@ -383,5 +384,32 @@ function renderNotificationsScreen() {
     });
   }
   Data.markNotifViewed(); // clears the unread badge on the bell
+  return wrap;
+}
+
+// One notification in full (opened by tapping it in the phone's tray, or by
+// tapping a row in the history). onClose returns to the history list.
+function renderNotificationDetail(entry, onClose) {
+  const when = entry.ts ? new Date(entry.ts) : new Date();
+  const whenText = isNaN(when.getTime()) ? '' : when.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  const wrap = fmt(`
+    <div class="activity-screen fade-in">
+      <div class="activity-header">
+        <div class="title">Notification</div>
+        <button class="icon-btn" id="notif-detail-close" aria-label="Close">✕</button>
+      </div>
+      <div class="screen-scroll" style="padding-top:var(--space-3);">
+        <div class="card" style="padding:var(--space-4);">
+          ${whenText ? `<div style="color:var(--text-3);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">${escapeHtml(whenText)}</div>` : ''}
+          <div style="font-size:20px;font-weight:800;line-height:1.25;margin-bottom:var(--space-2);">${escapeHtml(entry.title || 'UrgeAway')}</div>
+          <div style="font-size:15.5px;line-height:1.55;white-space:pre-wrap;">${escapeHtml(entry.body || '')}</div>
+        </div>
+        <button class="btn btn-ghost btn-block" id="notif-detail-done" style="margin-top:var(--space-3);">Back to notifications</button>
+      </div>
+    </div>
+  `);
+  const close = () => { if (onClose) onClose(); else App.closeOverlay(); };
+  wrap.querySelector('#notif-detail-close').addEventListener('click', close);
+  wrap.querySelector('#notif-detail-done').addEventListener('click', close);
   return wrap;
 }

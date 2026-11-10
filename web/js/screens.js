@@ -107,14 +107,13 @@ function renderHome() {
           </div>
           <button class="icon-btn" id="btn-notifications" aria-label="Notifications" style="width:40px;height:40px;flex-shrink:0;position:relative;">
             ${NavIcons.bell}
-            ${unreadNotifs > 0 ? `<span style="position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 3px;border-radius:999px;background:var(--coral);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;line-height:1;">${unreadNotifs}</span>` : ''}
+            ${unreadNotifs > 0 ? `<span id="notif-dot" aria-label="New notification" style="position:absolute;top:8px;right:9px;width:10px;height:10px;border-radius:50%;background:#ff3b30;box-shadow:0 0 0 2px rgba(255,255,255,0.9),0 0 8px rgba(255,59,48,0.75);"></span>` : ''}
           </button>
         </div>
 
         <div id="notif-banner-slot"></div>
 
         <div class="urge-hero" style="margin-top:var(--space-3);">
-          <div class="wave-wrap">${waveSVG()}</div>
           <button class="urge-btn" id="btn-urge">I HAVE AN URGE</button>
           <p class="hint">Tap it. We'll take it from there.</p>
         </div>

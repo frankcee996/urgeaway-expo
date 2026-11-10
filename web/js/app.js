@@ -12,6 +12,7 @@ const App = (() => {
   let initSettled = false;
   let pendingNotificationOpen = false;
   let pendingUrgeShortcut = false;
+  let pendingNotificationEntry = null;
   let dashboardRefresh = null;
 
   const shellEl = document.getElementById('app-shell');
@@ -28,7 +29,7 @@ const App = (() => {
     // event until a listener exists to receive it — the earlier these are
     // attached, the more reliably that buffered event gets caught.
     if (window.Push) Push.listen();
-    if (window.Notifications) Notifications.listen();
+    if (typeof Notifications !== 'undefined') Notifications.listen();
     // Keep the rolling 50-day window of 10 a.m. nudges full (no-op unless Reminders are on).
     if (typeof Notifications !== 'undefined' && Notifications.refreshNudges) Notifications.refreshNudges();
     // Kick off Auth's own init (fetches any already-signed-in user, attaches
@@ -80,7 +81,7 @@ const App = (() => {
         // (a cold start via tapping a notification) gets honored now,
         // instead of being silently overwritten by Home/onboarding.
         initSettled = true;
-        if (pendingNotificationOpen) { pendingNotificationOpen = false; openNotifications(); }
+        if (pendingNotificationOpen) { pendingNotificationOpen = false; const e = pendingNotificationEntry; pendingNotificationEntry = null; openNotificationDetail(e); }
         // Opened from the Quick Settings "I have an urge" tile (cold start).
         if (pendingUrgeShortcut) { pendingUrgeShortcut = false; if (Data.isOnboarded()) openUrgeMode(); }
       });
@@ -95,7 +96,7 @@ const App = (() => {
   // launch call is fire-and-forget and can still be resolving in-flight
   // when the bell is tapped moments later.
   function syncNotificationHistory() {
-    const p1 = window.Notifications && Notifications.syncDelivered ? Notifications.syncDelivered() : Promise.resolve();
+    const p1 = typeof Notifications !== 'undefined' && Notifications.syncDelivered ? Notifications.syncDelivered() : Promise.resolve();
     const p2 = window.Push && Push.syncDelivered ? Push.syncDelivered() : Promise.resolve();
     return Promise.all([p1, p2]).catch(() => {});
   }
@@ -105,9 +106,24 @@ const App = (() => {
   // that's the common case (app was backgrounded, person tapped the
   // notification to bring it to front). If this fires during a cold start,
   // before the normal launch flow has settled, defer it — see init() above.
-  function handleNotificationTapped() {
-    if (initSettled) openNotifications();
-    else pendingNotificationOpen = true;
+  function handleNotificationTapped(entry) {
+    // The OS keeps returning the same "last tapped" notification on later
+    // launches — only honor each distinct tap once.
+    if (entry && entry.key) {
+      if (Storage.get('last_notif_tap_key', null) === entry.key) return;
+      Storage.set('last_notif_tap_key', entry.key);
+    }
+    if (initSettled) openNotificationDetail(entry);
+    else { pendingNotificationOpen = true; pendingNotificationEntry = entry || null; }
+  }
+
+  // The full view of one notification. Closing it lands on the history
+  // list, so the notification is right there afterwards.
+  function openNotificationDetail(entry) {
+    if (!entry || (!entry.title && !entry.body)) { openNotifications(); return; }
+    haptic();
+    overlayContainer.innerHTML = '';
+    overlayContainer.appendChild(renderNotificationDetail(entry, openNotifications));
   }
 
   // Called when the Quick Settings tile (urgeaway://urge) opens the app.
@@ -372,6 +388,7 @@ const App = (() => {
     openRecoveryTimeline,
     openQuickCheckIn,
     openNotifications,
+    openNotificationDetail,
     handleNotificationTapped,
     handleUrgeShortcut,
     syncNotificationHistory,
@@ -384,6 +401,9 @@ const App = (() => {
     haptic,
   };
 })();
+
+// Same reason as window.Data (storage.js): other files check window.App.
+window.App = App;
 
 document.addEventListener('DOMContentLoaded', () => {
   App.init();

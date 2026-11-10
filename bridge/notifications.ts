@@ -91,25 +91,50 @@ export async function getDeliveredNotifications(): Promise<{
 // Pushes native notification events into the WebView via
 // window.__notifDispatch (see bridge/injectedBridge.ts) — these are
 // fire-and-forget events, not request/response bridge calls.
+// Notification.date may be seconds or milliseconds depending on platform
+// and version — normalize to milliseconds.
+function toMillis(date: number | undefined): number {
+  if (!date) return Date.now();
+  return date < 1e12 ? Math.round(date * 1000) : date;
+}
+
+function summarize(n: Notifications.Notification) {
+  return {
+    id: n.request.identifier,
+    title: n.request.content.title || '',
+    body: n.request.content.body || '',
+    date: toMillis(n.date),
+  };
+}
+
+// Both local reminders AND Firebase push messages come through here —
+// expo-notifications reports them the same way — and the web side logs
+// them into the notification history either way.
 export function listen(injectJavaScript: (script: string) => void) {
+  const sendTap = (response: Notifications.NotificationResponse) => {
+    const payload = { notification: summarize(response.notification) };
+    injectJavaScript(`window.__notifDispatch('localNotificationActionPerformed', ${JSON.stringify(payload)}); true;`);
+  };
+
   Notifications.addNotificationReceivedListener((notification) => {
-    const payload = {
-      id: notification.request.identifier,
-      title: notification.request.content.title || '',
-      body: notification.request.content.body || '',
-    };
-    injectJavaScript(`window.__notifDispatch('localNotificationReceived', ${JSON.stringify(payload)}); true;`);
+    injectJavaScript(`window.__notifDispatch('localNotificationReceived', ${JSON.stringify(summarize(notification))}); true;`);
   });
 
-  Notifications.addNotificationResponseReceivedListener((response) => {
-    const n = response.notification;
-    const payload = {
-      notification: {
-        id: n.request.identifier,
-        title: n.request.content.title || '',
-        body: n.request.content.body || '',
-      },
-    };
-    injectJavaScript(`window.__notifDispatch('localNotificationActionPerformed', ${JSON.stringify(payload)}); true;`);
-  });
+  Notifications.addNotificationResponseReceivedListener(sendTap);
+
+  // Cold start: if the app was launched by tapping a notification, that
+  // response happened before this listener existed. Ask for it explicitly
+  // (the web side ignores a tap it has already handled).
+  try {
+    const getLast =
+      (Notifications as any).getLastNotificationResponse ??
+      (Notifications as any).getLastNotificationResponseAsync;
+    Promise.resolve(getLast ? getLast() : null)
+      .then((response) => {
+        if (response) sendTap(response as Notifications.NotificationResponse);
+      })
+      .catch(() => {});
+  } catch {
+    /* non-fatal */
+  }
 }

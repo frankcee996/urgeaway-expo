@@ -319,13 +319,26 @@ const Notifications = (() => {
     if (!available() || listening) return;
     listening = true;
     const { LocalNotifications } = window.CapNotifications;
+    // Both local reminders and Firebase pushes arrive through these two
+    // events (expo-notifications reports them the same way).
     LocalNotifications.addListener('localNotificationReceived', (notification) => {
-      if (window.Data) Data.addNotifToHistory({ id: dayScopedId(notification.id), title: notification.title || 'UrgeAway', body: notification.body || '' });
+      if (window.Data) Data.addNotifToHistory({ id: dayScopedId(notification.id), title: notification.title || 'UrgeAway', body: notification.body || '', ts: notification.date });
+      // Light up the bell's red dot right away if Home is what's showing.
+      if (window.App && App.refreshTab) App.refreshTab('home');
     });
     LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
       const n = (action && action.notification) || {};
-      if (window.Data) Data.addNotifToHistory({ id: dayScopedId(n.id), title: n.title || 'UrgeAway', body: n.body || '' });
-      if (window.App && App.handleNotificationTapped) App.handleNotificationTapped();
+      if (window.Data) Data.addNotifToHistory({ id: dayScopedId(n.id), title: n.title || 'UrgeAway', body: n.body || '', ts: n.date });
+      // Tapping it opens the full notification; closing that lands on the
+      // history list, where it is now saved.
+      if (window.App && App.handleNotificationTapped) {
+        App.handleNotificationTapped({
+          key: String(n.id || '') + '|' + String(n.date || ''),
+          title: n.title || 'UrgeAway',
+          body: n.body || '',
+          ts: n.date || Date.now(),
+        });
+      }
     });
   }
 

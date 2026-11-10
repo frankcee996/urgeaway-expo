@@ -63,7 +63,7 @@ const Data = (() => {
     URGE_LOCK_SETUP_DONE: 'urge_lock_setup_done', // been through the Screen Pinning setup flow at least once
     PROFILE_NAME: 'profile_name',
     PROFILE_PIC: 'profile_pic', // base64 data URL, stored locally only — never uploaded
-    NOTIF_HISTORY: 'notif_history', // last 5 { id, title, body, ts }, newest first
+    NOTIF_HISTORY: 'notif_history', // last 10 { id, title, body, ts }, newest first
     NOTIF_LAST_VIEWED: 'notif_last_viewed', // timestamp the notification bell page was last opened
     NOTIF_LAST_SYNC: 'notif_last_sync', // timestamp last checked for scheduled reminders that should have fired by now
     MSG_SHUFFLE: 'msg_shuffle_queues', // { [kind]: number[] } remaining shuffled message-pool indices, per kind
@@ -824,7 +824,7 @@ const Data = (() => {
   }
 
   /* ---------- Notification history (local-only, capped at 10) ---------- */
-  const NOTIF_HISTORY_MAX = 5;
+  const NOTIF_HISTORY_MAX = 10;
   function addNotifToHistory(entry) {
     const list = Storage.get(KEYS.NOTIF_HISTORY, []);
     const id = (entry && entry.id) || ('notif_' + Date.now() + '_' + Math.floor(Math.random() * 1000));
@@ -1011,3 +1011,8 @@ const Data = (() => {
     setAnalyticsPromptShown,
   };
 })();
+
+// Top-level `const` isn't a property of `window`, but notifications.js and
+// others check `window.Data` before logging to history — without this those
+// checks were always false and nothing was ever recorded.
+window.Data = Data;

@@ -48,8 +48,17 @@ export const INJECTED_BRIDGE = `
   // calls injectJavaScript to invoke __notifDispatch) rather than through
   // __bridgeCall's promise-per-request pattern used everywhere else.
   window.__notifListeners = { localNotificationReceived: [], localNotificationActionPerformed: [] };
+  // Events that arrive before the page has registered a listener (e.g. the
+  // tap that cold-started the app) are held and delivered the moment one is
+  // added, instead of being dropped.
+  window.__notifBuffer = {};
   window.__notifDispatch = function (event, payload) {
-    (window.__notifListeners[event] || []).forEach(function (cb) { cb(payload); });
+    var listeners = window.__notifListeners[event] || [];
+    if (!listeners.length) {
+      (window.__notifBuffer[event] = window.__notifBuffer[event] || []).push(payload);
+      return;
+    }
+    listeners.forEach(function (cb) { cb(payload); });
   };
 
   window.CapNotifications = {
@@ -62,6 +71,11 @@ export const INJECTED_BRIDGE = `
       addListener: function (event, cb) {
         window.__notifListeners[event] = window.__notifListeners[event] || [];
         window.__notifListeners[event].push(cb);
+        var held = window.__notifBuffer[event];
+        if (held && held.length) {
+          window.__notifBuffer[event] = [];
+          held.forEach(function (payload) { try { cb(payload); } catch (e) {} });
+        }
       }
     }
   };
